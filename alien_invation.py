@@ -7,6 +7,7 @@ from bullet import Bullet
 from alien import Alien
 from time import sleep
 from game_stats import GameStats
+from button import Button
 # 使用pygame图形界面，sys中的工具退出游戏
 # Pygame 之所以高效，是因为它让你能够把所有的游戏元素当作矩形（rect 对象）来处理，即便它们的形状并非矩形也一样。
 
@@ -46,6 +47,8 @@ class AlienInvasion:
         self.clock = pygame.time.Clock()
         # 设置游戏结束标志
         self.game_active = False
+        # 创建play按钮
+        self.play_button = Button(self,"Play")
 
     def run_game(self):
         """开始游戏的主循环"""
@@ -61,12 +64,17 @@ class AlienInvasion:
                 self._update_bullets()
                 # 计算更新外星人的位置
                 self._update_aliens()
-            # 绘制图像并更新屏幕
-            self._update_screen()
+                # 绘制图像并更新屏幕
+                self._update_screen()
+            else:
+                # 绘制play按钮
+                self._update_play_screen()
             # tick() 方法接受一个参数：游戏的帧率。
             # 方法会让循环暂停足够的时间，以使得循环总次数不超过 60 FPS（每秒 60 帧）
             self.clock.tick(60)
     
+
+
     # 约定以'_'开头的方法为辅助方法，一般只在类内调用
     def _check_events(self):
         """响应按键和鼠标事件"""
@@ -86,6 +94,31 @@ class AlienInvasion:
             # 抬起按键            
             elif event.type == pygame.KEYUP:
                 self._check_keyup_events(event)
+
+            # 响应鼠标点击
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                # 获取点击位置元组
+                mouse_pos = pygame.mouse.get_pos()
+                self._check_play_button(mouse_pos)
+                
+
+    def _check_play_button(self,mouse_pos):
+        """在单机play时开始游戏"""
+        # 使用rect的collidepoint方法检测鼠标是否在rectangle内
+        # 若游戏开始点击该区域则游戏会重新开始，故添加条件
+        if self.play_button.rect.collidepoint(mouse_pos) and not self.game_active:
+            # 重置游戏的统计信息
+            self.stats.reset_stats()
+            self.game_active = True
+
+            self.buttles.empty()
+            self.aliens.empty()
+
+            self._create_fleet()
+            self.ship.center_ship()
+
+            # 隐藏光标
+            pygame.mouse.set_visible(False)
 
     def _check_keydown_events(self, event):
         """
@@ -232,6 +265,7 @@ class AlienInvasion:
             sleep(0.5)
         else:
             self.game_active = False
+            pygame.mouse.set_visible(True)
 
     def _update_ship_left(self):
         """左上角绘制剩余飞船数量"""
@@ -243,6 +277,12 @@ class AlienInvasion:
             self.screen.blit(image,rect)
             rect.x += rect.width
 
+    def _update_play_screen(self):
+        """显示play按钮"""
+        self.screen.blit(self.settings.bg_image, (0, 0))
+        self.play_button.draw_button()
+        pygame.display.flip()
+
     def _update_screen(self):
         """绘制图像更新屏幕内容"""
         # fill() 填充颜色，用于绘制 surface，只接受一个表示颜色的实参。
@@ -250,6 +290,9 @@ class AlienInvasion:
         #self.screen.fill(self.settings.bg_color)
         # 绘制背景图片
         self.screen.blit(self.settings.bg_image, (0, 0))
+
+
+
         # 绘制剩余飞船数量
         self._update_ship_left()
 
