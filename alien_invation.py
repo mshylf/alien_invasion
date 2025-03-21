@@ -4,6 +4,9 @@ from settings import Settings
 from ship import Ship
 from Middle_image_test import Middle_image
 from bullet import Bullet
+from alien import Alien
+from time import sleep
+from game_stats import GameStats
 # 使用pygame图形界面，sys中的工具退出游戏
 # Pygame 之所以高效，是因为它让你能够把所有的游戏元素当作矩形（rect 对象）来处理，即便它们的形状并非矩形也一样。
 
@@ -25,18 +28,24 @@ class AlienInvasion:
         # 设置窗口标题
         pygame.display.set_caption("Alien Invasion")
 
+        # 创建一个用于存储游戏统计信息的实例
+        self.stats = GameStats(self)
         # 初始化中属性是有顺序的
         # 因此，必须确保先定义好会被其他对象依赖的属性，再创建依赖这些属性的对象。
         # 不能放到self.screen定义前，在Ship中要使用这个对象
         self.ship = Ship(self)
         #self.middle_image = Middle_image(self)
-        # 创建用于存储子弹的编组：
+        # 创建用于存储子弹的精灵组：
         self.buttles = pygame.sprite.Group()
+        self.aliens = pygame.sprite.Group()
+        self._create_fleet()
 
         # 设置时钟控制帧率,确保它在主循环每次通过后都进行计时（tick）。
         # 当这个循环的通过速度超过我们定义的帧率时，
         # Pygame 会计算需要暂停多长时间，以便游戏的运行速度保持一致。
         self.clock = pygame.time.Clock()
+        # 设置游戏结束标志
+        self.game_active = False
 
     def run_game(self):
         """开始游戏的主循环"""
@@ -44,10 +53,14 @@ class AlienInvasion:
         while True:
             # 获取事件信息
             self._check_events()
-            # 根据移动标志计算更新飞船的位置
-            self.ship.update()
-            # 计算更新每颗子弹的位置，并删除已消失的子弹
-            self._update_bullets()
+            # 当游戏处于活动状态时，更新飞船位置
+            if self.game_active:
+                # 根据移动标志计算更新飞船的位置
+                self.ship.update()
+                # 计算更新每颗子弹的位置，并删除已消失的子弹
+                self._update_bullets()
+                # 计算更新外星人的位置
+                self._update_aliens()
             # 绘制图像并更新屏幕
             self._update_screen()
             # tick() 方法接受一个参数：游戏的帧率。
@@ -110,7 +123,10 @@ class AlienInvasion:
             self.buttles.add(new_bullet)
 
     def _update_bullets(self):
-        """更新子弹的位置，并删除已经消失的子弹"""
+        """
+        更新子弹的位置，并删除已经消失的子弹
+        碰撞检测
+        """
         # 在对编组调用update() 时，编组会自动对其中的每个精灵调用 update()，
         # 因此 self.bullets.update() 将为 bullets 编组中的每颗子弹调用 bullet.update()。
         # 向上移动每颗子弹
@@ -120,19 +136,127 @@ class AlienInvasion:
         for bullet in self.buttles.copy():
             if bullet.rect.bottom <= 0:
                 self.buttles.remove(bullet)
-       
+        
+        self._check_bullet_alien_collisions()
+
+    def _create_fleet(self):
+        """创建一个船队"""
+        # 一行中填满外星人，直到所有行填满为止
+
+        new_alien = Alien(self)
+        alien_width = new_alien.rect.width
+        alien_height = new_alien.rect.height
+        current_x = alien_width
+        current_y = self.settings.alien_y_gap
+
+        while current_y <= (self.settings.screen_hight - self.ship.rect.height - self.settings.alien_y_gap):
+            # 绘制行防止超出屏幕边界，一半在外面
+            while current_x <= (self.screen.get_width()-alien_width-self.settings.alien_x_gap):
+                self._create_alien(current_x,current_y)
+                current_x += (alien_width + self.settings.alien_x_gap)
+            current_x = alien_width
+            current_y += (alien_height + self.settings.alien_y_gap)
+
+    def _update_aliens(self):
+        """计算更新外星人"""
+        self._check_fleet_edges()
+        self.aliens.update()
+        self._check_alien_ship_collisions()
+        self._check_alien_bottom()
+
+
+    def _check_fleet_edges(self):
+        """检查船队是否触碰边界"""
+        for aline in self.aliens.sprites():
+            if aline._check_edges():
+                self._chenge_fleet_direction()
+                break
+
+    def _chenge_fleet_direction(self):
+        """将整个舰队向下移动，并改变左右移动方向标志"""
+        self.settings.fleet_direction *= -1
+        for alien in self.aliens.sprites():
+            alien.rect.y += self.settings.fleet_drop_speed
+
+    def _create_alien(self,current_x,current_y):
+        """将一个外星人放入一行中"""
+        new_alien = Alien(self)
+        new_alien.x = current_x
+        new_alien.rect.x = current_x
+        new_alien.rect.y = current_y
+        self.aliens.add(new_alien)
+
+    def _check_bullet_alien_collisions(self):
+        """碰撞检测与响应"""
+        # 检测是否有子弹击中了外星人
+        # 若击中，则删除子弹与外星人
+        # 将 self.bullets 中的所有子弹与 self.aliens 中的所有外星人进行比较，
+        # 看它们是否重叠了在一起。每当有子弹和外星人的 rect 重叠时，
+        # groupcollide() 就在返回的字典中添加一个键值对。
+        # 两个值为 True 的实参告诉 Pygame 在发生碰撞时删除对应的子弹和外星人。
+        collisions = pygame.sprite.groupcollide(self.buttles,self.aliens,True,True)
+
+        # 外星人全部打完后再生成部分
+        if not self.aliens:
+            # 删除现有的子弹并重新创建船队
+            self.buttles.empty()
+            self._create_fleet()
+
+    def _check_alien_ship_collisions(self):
+        """检查外星人与飞船之间的碰撞"""
+        # spritecollideany() 函数接受两个实参：一个精灵和一个编组。
+        # 它检查编组是否有成员与精灵发生了碰撞，并在找到与精灵发生碰撞的成员后停止遍历编组。
+        # 这里，它遍历 aliens 编组，并返回找到的第一个与飞船发生碰撞的外星人。
+        if pygame.sprite.spritecollideany(self.ship,self.aliens):
+            self._ship_hit()
+
+    def _check_alien_bottom(self):
+        """检查是否有外星人到达底部"""
+        for alien in self.aliens.sprites():
+            if alien.rect.bottom >= self.screen.get_rect().bottom:
+                self._ship_hit()
+                break
+
+    def _ship_hit(self):
+        """响应飞船与外星人碰撞"""
+        if self.stats.ship_left > 0:
+            self.stats.ship_left -= 1
+            self.buttles.empty()
+            self.aliens.empty()
+
+            # 创建一个新的船队，并将飞船重新放在屏幕中央
+            self._create_fleet()
+            self.ship.center_ship()
+
+            # 暂停
+            sleep(0.5)
+        else:
+            self.game_active = False
+
+    def _update_ship_left(self):
+        """左上角绘制剩余飞船数量"""
+        image = self.settings.pic_proportional_scaling(self.settings.ship_image,50)
+        rect = image.get_rect()
+        rect.x = 10
+        rect.y = 10
+        for i in range(self.stats.ship_left):
+            self.screen.blit(image,rect)
+            rect.x += rect.width
 
     def _update_screen(self):
         """绘制图像更新屏幕内容"""
-        # 绘制背景图片
-        #self.screen.blit(self.settings.bg_image, (0, 0))
-
         # fill() 填充颜色，用于绘制 surface，只接受一个表示颜色的实参。
         # 每次循环时都重新绘制屏幕，是绘图操作(screen是整个窗口的Surface对象)
-        self.screen.fill(self.settings.bg_color)
+        #self.screen.fill(self.settings.bg_color)
+        # 绘制背景图片
+        self.screen.blit(self.settings.bg_image, (0, 0))
+        # 绘制剩余飞船数量
+        self._update_ship_left()
 
         # 绘制飞船
         self.ship.blitme()
+        # 利用精灵组自带的draw方法绘制外星人
+        self.aliens.draw(self.screen)
 
         # 绘制子弹组
         # sprites()将精灵组的精灵转化为列表

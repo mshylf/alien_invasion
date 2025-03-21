@@ -9,18 +9,37 @@ class Settings:
         self.screen_width = 1200
         self.screen_hight = 800
         self.bg_color = (135, 206, 235)
-        #self.bg_image = pygame.image.load('images/bk_image.jpg')
+        self.bg_image = pygame.image.load('images/bk_image.jpg')
+        self.bg_image = self.pic_proportional_scaling(self.bg_image,self.screen_width)
 
+        # 飞船图片加载
+        self.ship_image = pygame.image.load('images/space-shuttle-2818717.png')
         # 飞船设置
         self.ship_moving_speed = 5 
+        # 飞船总命数
+        self.ship_limit = 3
 
         # 子弹设置
         self.bullet_speed = 7.0
         self.bullet_width = 3
         self.bullet_height = 15
-        self.bullet_color = (60,60,60)
+        self.bullet_color = (255, 255, 0)
         # 屏幕上出现的总子弹数量
         self.bullet_allowed = 10
+
+        # 外星人图片加载
+        self.alien_image = pygame.image.load('images/ufo-4778062_1920.png')
+        # 外星人飞船宽度设置
+        self.alien_width = 130
+        # 外星人x间隔设置
+        self.alien_x_gap = self.alien_width*0.5
+        self.alien_y_gap = 100
+
+        self.alien_moving_speed = 2
+        # 外星人向下的速度
+        self.fleet_drop_speed = 1000
+        # fleet_direction为1表示向右移动，为-1表示向左移动
+        self.fleet_direction = 1
 
     def pic_proportional_scaling(self,image,target_width):
         """按给定的宽经行等比缩放"""

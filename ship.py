@@ -17,14 +17,13 @@ class Ship:
 
         # 加载飞船图像并获取其外接矩形
         # 为self.image赋予加载图形的surface对象
-        self.image = pygame.image.load('images/fight_plane.bmp')
-        # 注：此处之后可以自定义
+      
 
         # 设置使用主文件中的设置
         self.settings = ai_game.settings
 
         # 设置飞船大小
-        self.image = self.settings.pic_proportional_scaling(self.image,100)
+        self.image = self.settings.pic_proportional_scaling(self.settings.ship_image,150)
 
         self.rect = self.image.get_rect()
 
@@ -53,3 +52,8 @@ class Ship:
     def blitme(self):
         """在指定位置画飞船"""
         self.screen.blit(self.image,self.rect)
+
+    def center_ship(self):
+        """居中飞船"""
+        self.rect.midbottom = self.screen_rect.midbottom
+        self.x = float(self.rect.x)
