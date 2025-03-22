@@ -15,12 +15,12 @@ class Settings:
         # 飞船图片加载
         self.ship_image = pygame.image.load('images/space-shuttle-2818717.png')
         # 飞船设置
-        self.ship_moving_speed = 5 
+        
         # 飞船总命数
         self.ship_limit = 1
 
         # 子弹设置
-        self.bullet_speed = 7.0
+        
         self.bullet_width = 3
         self.bullet_height = 15
         self.bullet_color = (255, 255, 0)
@@ -34,13 +34,30 @@ class Settings:
         # 外星人x间隔设置
         self.alien_x_gap = self.alien_width*0.5
         self.alien_y_gap = 100
+        
+        # 游戏的加快速度
+        self.speedup_scale = 1.2
+
+        # 选择起始难度
+        self.choose_speed = [1.1,1.5]
+    
+    def initialize_dynamic_settings(self):
+        """初始化随游戏进行而变化的量"""
+        self.ship_moving_speed = 5 
+        self.bullet_speed = 7.0
         self.alien_moving_speed = 2
-        # 外星人向下的速度
-        self.fleet_drop_speed = 100
+         # 外星人向下的速度
+        self.fleet_drop_speed = 10
         # fleet_direction为1表示向右移动，为-1表示向左移动
         self.fleet_direction = 1
 
-        # 按钮设置
+    def increase_speed(self):
+        """提高速度设置的值"""
+        #self.ship_moving_speed *= self.speedup_scale
+        self.bullet_speed *= self.speedup_scale
+        self.alien_moving_speed *= self.speedup_scale
+        self.fleet_drop_speed *= self.speedup_scale
+
 
     def pic_proportional_scaling(self,image,target_width):
         """按给定的宽经行等比缩放"""

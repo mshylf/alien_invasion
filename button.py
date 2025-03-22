@@ -1,6 +1,6 @@
 import pygame.font
 # 由于pygame中没有内置的按钮类，因此我们需要创建一个Button类，用于创建按钮。
-# 创建一个带标签的实心矩形，可以使用这些代码来创建任意按钮
+# 创建一个带标签的实心矩形，可以使用这些代码来创建任意居中的按钮
 class Button:
     """创建一个按钮类"""
     def __init__(self,ai_game,msg):

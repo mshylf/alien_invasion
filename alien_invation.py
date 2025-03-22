@@ -1,5 +1,6 @@
 import sys
 import pygame
+import button
 from settings import Settings
 from ship import Ship
 from Middle_image_test import Middle_image
@@ -49,6 +50,10 @@ class AlienInvasion:
         self.game_active = False
         # 创建play按钮
         self.play_button = Button(self,"Play")
+        # 创建难度选择按钮
+        self.easy_button = Button(self,'easy')
+        self.hard_button = Button(self,'hard')
+
 
     def run_game(self):
         """开始游戏的主循环"""
@@ -72,9 +77,7 @@ class AlienInvasion:
             # tick() 方法接受一个参数：游戏的帧率。
             # 方法会让循环暂停足够的时间，以使得循环总次数不超过 60 FPS（每秒 60 帧）
             self.clock.tick(60)
-    
-
-
+ 
     # 约定以'_'开头的方法为辅助方法，一般只在类内调用
     def _check_events(self):
         """响应按键和鼠标事件"""
@@ -109,6 +112,46 @@ class AlienInvasion:
         if self.play_button.rect.collidepoint(mouse_pos) and not self.game_active:
             # 重置游戏的统计信息
             self.stats.reset_stats()
+            self.settings.initialize_dynamic_settings()
+            self.game_active = True
+
+            self.buttles.empty()
+            self.aliens.empty()
+
+            self._create_fleet()
+            self.ship.center_ship()
+
+            # 隐藏光标
+            pygame.mouse.set_visible(False)
+
+
+        elif self.hard_button.rect.collidepoint(mouse_pos) and not self.game_active:
+            # 选择困难模式
+            # 重置游戏的统计信息
+
+            self.stats.reset_stats()
+            self.settings.speedup_scale = self.settings.choose_speed[1]
+            self.settings.initialize_dynamic_settings()
+            self.settings.increase_speed()
+            self.game_active = True
+
+            self.buttles.empty()
+            self.aliens.empty()
+
+            self._create_fleet()
+            self.ship.center_ship()
+
+            # 隐藏光标
+            pygame.mouse.set_visible(False)
+
+        elif self.easy_button.rect.collidepoint(mouse_pos) and not self.game_active:
+            # 选择简单模式
+            # 重置游戏的统计信息
+
+            self.stats.reset_stats()
+            self.settings.speedup_scale = self.settings.choose_speed[0]
+            self.settings.initialize_dynamic_settings()
+            self.settings.increase_speed()
             self.game_active = True
 
             self.buttles.empty()
@@ -234,6 +277,7 @@ class AlienInvasion:
             # 删除现有的子弹并重新创建船队
             self.buttles.empty()
             self._create_fleet()
+            self.settings.increase_speed()
 
     def _check_alien_ship_collisions(self):
         """检查外星人与飞船之间的碰撞"""
@@ -278,10 +322,26 @@ class AlienInvasion:
             rect.x += rect.width
 
     def _update_play_screen(self):
-        """显示play按钮"""
+        """显示按钮"""
         self.screen.blit(self.settings.bg_image, (0, 0))
         self.play_button.draw_button()
+        self._draw_choose_button()
         pygame.display.flip()
+
+    def _draw_choose_button(self):
+        """绘制选择按钮"""
+        self.easy_button.rect.midbottom = self.screen.get_rect().midbottom
+        self.easy_button.rect.y = 100
+        self.hard_button.rect.center = self.screen.get_rect().center
+        self.hard_button.rect.y = 200
+        self.easy_button.msg_image_rect.center = self.easy_button.rect.center
+        self.hard_button.msg_image_rect.center = self.hard_button.rect.center
+
+        self.screen.fill(self.easy_button.button_color,self.easy_button.rect)
+        self.screen.blit(self.easy_button.msg_image, self.easy_button.msg_image_rect)
+
+        self.screen.fill(self.hard_button.button_color,self.hard_button.rect)
+        self.screen.blit(self.hard_button.msg_image, self.hard_button.msg_image_rect)
 
     def _update_screen(self):
         """绘制图像更新屏幕内容"""
@@ -290,8 +350,6 @@ class AlienInvasion:
         #self.screen.fill(self.settings.bg_color)
         # 绘制背景图片
         self.screen.blit(self.settings.bg_image, (0, 0))
-
-
 
         # 绘制剩余飞船数量
         self._update_ship_left()
