@@ -38,11 +38,18 @@ class Settings:
         # 游戏的加快速度
         self.speedup_scale = 1.2
 
+        # 游戏分数的提高
+        self.score_scale = 1.5
+
+
         # 选择起始难度
         self.choose_speed = [1.1,1.5]
     
     def initialize_dynamic_settings(self):
-        """初始化随游戏进行而变化的量"""
+        """
+        初始化随游戏进行而变化的量
+        每次游戏开始时重置    
+        """
         self.ship_moving_speed = 5 
         self.bullet_speed = 7.0
         self.alien_moving_speed = 2
@@ -50,6 +57,8 @@ class Settings:
         self.fleet_drop_speed = 10
         # fleet_direction为1表示向右移动，为-1表示向左移动
         self.fleet_direction = 1
+        # 积分设置
+        self.alien_points = 50
 
     def increase_speed(self):
         """提高速度设置的值"""
@@ -57,6 +66,7 @@ class Settings:
         self.bullet_speed *= self.speedup_scale
         self.alien_moving_speed *= self.speedup_scale
         self.fleet_drop_speed *= self.speedup_scale
+        self.alien_points = int(self.alien_points * self.score_scale)
 
 
     def pic_proportional_scaling(self,image,target_width):

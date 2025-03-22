@@ -9,6 +9,7 @@ from alien import Alien
 from time import sleep
 from game_stats import GameStats
 from button import Button
+from scoreboard import Scoreboard
 # 使用pygame图形界面，sys中的工具退出游戏
 # Pygame 之所以高效，是因为它让你能够把所有的游戏元素当作矩形（rect 对象）来处理，即便它们的形状并非矩形也一样。
 
@@ -32,6 +33,8 @@ class AlienInvasion:
 
         # 创建一个用于存储游戏统计信息的实例
         self.stats = GameStats(self)
+        # 积分牌创建实例
+        self.score_board = Scoreboard(self)
         # 初始化中属性是有顺序的
         # 因此，必须确保先定义好会被其他对象依赖的属性，再创建依赖这些属性的对象。
         # 不能放到self.screen定义前，在Ship中要使用这个对象
@@ -72,6 +75,7 @@ class AlienInvasion:
                 # 绘制图像并更新屏幕
                 self._update_screen()
             else:
+                
                 # 绘制play按钮
                 self._update_play_screen()
             # tick() 方法接受一个参数：游戏的帧率。
@@ -112,6 +116,7 @@ class AlienInvasion:
         if self.play_button.rect.collidepoint(mouse_pos) and not self.game_active:
             # 重置游戏的统计信息
             self.stats.reset_stats()
+            self.score_board.prep_score()
             self.settings.initialize_dynamic_settings()
             self.game_active = True
 
@@ -130,6 +135,7 @@ class AlienInvasion:
             # 重置游戏的统计信息
 
             self.stats.reset_stats()
+            self.score_board.prep_score()
             self.settings.speedup_scale = self.settings.choose_speed[1]
             self.settings.initialize_dynamic_settings()
             self.settings.increase_speed()
@@ -149,6 +155,7 @@ class AlienInvasion:
             # 重置游戏的统计信息
 
             self.stats.reset_stats()
+            self.score_board.prep_score()
             self.settings.speedup_scale = self.settings.choose_speed[0]
             self.settings.initialize_dynamic_settings()
             self.settings.increase_speed()
@@ -272,11 +279,17 @@ class AlienInvasion:
         # 两个值为 True 的实参告诉 Pygame 在发生碰撞时删除对应的子弹和外星人。
         collisions = pygame.sprite.groupcollide(self.buttles,self.aliens,True,True)
 
+        if collisions:
+            self.stats.score += self.settings.alien_points
+            self.score_board.prep_score()
+            self.score_board.check_high_score()
+
         # 外星人全部打完后再生成部分
         if not self.aliens:
             # 删除现有的子弹并重新创建船队
             self.buttles.empty()
             self._create_fleet()
+            # 每次重新生成速度加快
             self.settings.increase_speed()
 
     def _check_alien_ship_collisions(self):
@@ -324,6 +337,8 @@ class AlienInvasion:
     def _update_play_screen(self):
         """显示按钮"""
         self.screen.blit(self.settings.bg_image, (0, 0))
+        # 绘制得分
+        self.score_board.show_score()
         self.play_button.draw_button()
         self._draw_choose_button()
         pygame.display.flip()
@@ -350,6 +365,9 @@ class AlienInvasion:
         #self.screen.fill(self.settings.bg_color)
         # 绘制背景图片
         self.screen.blit(self.settings.bg_image, (0, 0))
+
+        # 绘制积分系统
+        self.score_board.show_score()
 
         # 绘制剩余飞船数量
         self._update_ship_left()
